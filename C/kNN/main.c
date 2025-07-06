@@ -31,6 +31,9 @@ void count_row(const char* filename) {
           rowcount++;
     }
     row=rowcount;
+    fclose(tempfp);
+    free(line);
+    return;
 }
 
 void count_col(const char* filename) {
@@ -45,6 +48,9 @@ void count_col(const char* filename) {
         colcount++;
     }
     col=colcount;
+    fclose(tempfp);
+    free(line);
+    return;
 }
 
 void print_column(const char* filename) {
@@ -52,11 +58,13 @@ void print_column(const char* filename) {
     fopen_s(&tempfp,filename,"r");
     char* line=malloc(MAX_LINE_LEN);
     fgets(line,MAX_LINE_LEN,tempfp);
-    char* token=strtok(line,",");
+    char* token=strtok(line,",\n");
     printf("%s",token);
-    while((token=strtok(NULL,","))) {
+    while((token=strtok(NULL,",\n"))) {
         printf("\t%s",token);
     }
+    fclose(tempfp);
+    free(line);
     return;
 }
 
@@ -70,26 +78,28 @@ char*** read_csv(const char* filename) {
     count_row(filename);
     count_col(filename);
 
-    printf("========== Data ==========\n");
+    printf("============ Data ============\n");
     printf("(Row, Col): (%d, %d)\n",row,col);
     printf("Column names\n");
     print_column(filename);
-    printf("========================\n");
+    printf("\n");
+    printf("==============================\n");
 
     char*** csv=malloc(row*sizeof(char**));
     char line[MAX_LINE_LEN];
     int index=0;
     while((fgets(line,MAX_LINE_LEN,fileptr))) {
             csv[index]=malloc(col*sizeof(char*));
-            char* token=strtok(line,",");
+            char* token=strtok(line,",\n");
             csv[index][0]=strdup(token);
             int row_index=1;
-            while((token=strtok(NULL,","))) {
+            while((token=strtok(NULL,",\n"))) {
                 csv[index][row_index]=strdup(token);
                 row_index++;
             }
             index++;
     }
+    fclose(fileptr);
     return csv;
 }
 
@@ -151,12 +161,32 @@ int main() {
         }
     }
     print_column(DATA_PATH);
+    printf("\t\tDistance\n");
     for(int i=0;i<k;i++) {
         for(int j=0;j<col-1;j++) {
             printf("%lf\t",X[i][j]);
         }
-        printf("%s",labelarr[(int)X[i][col-1]]);
+        printf("%s\t%lf\n",labelarr[(int)X[i][col-1]],X[i][col]);
     }
     printf("The predicted label of data is: %s\n",labelarr[maxidx]);
+
+    //Free memory
+    //data
+    for(int i=0;i<row+1;i++) {
+        for(int j=0;j<col;j++) {
+            free(data[i][j]);
+        }
+        free(data[i]);
+    }
+    free(data);
+    //X
+    for(int i=0;i<row;i++) {
+        free(X[i]);
+    }
+    //X_new
+    free(X_new);
+    //labelcnt
+    free(labelcnt);
+
     return 0;
 }
